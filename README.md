@@ -1,14 +1,39 @@
 # gd-object-pool
 
-Simple object pooling helper with configurable reset hooks for Godot 4.
+Game-agnostic object pooling helper for Godot 4 with configurable reset hooks.
+
+- Package: `@aviorstudio/gd-object-pool`
+- Godot: `4.x` (tested on `4.4`)
+
+## Install
+
+Place this folder under `res://addons/<addon-dir>/` (for example `res://addons/@aviorstudio_gd-object-pool/`).
+
+- With `gdpm`: install/link into your project's `addons/`.
+- Manually: copy or symlink this repo folder into `res://addons/<addon-dir>/`.
+
+## Files
+
+- `plugin.cfg` / `plugin.gd`: editor plugin entry (no runtime behavior).
+- `src/object_pool_module.gd`: pooling implementation (also registers `class_name ObjectPoolModule`).
 
 ## Usage
-- Preload: `const ObjectPoolModule = preload("res://addons/@your_addon_dir/src/object_pool_module.gd")`
-- Configure: `var pool_config := ObjectPoolModule.ObjectPoolConfig.new(max_size, "reset", Callable())`
-- Get instances: `var instance := ObjectPoolModule.get_pooled(MyScript, pool_config)`
-- Return instances: `ObjectPoolModule.return_to_pool(instance, pool_config)`
-- Maintenance: `ObjectPoolModule.clear_pool(MyScript)` or `clear_all_pools()`; query with `get_pool_size(MyScript)`.
+
+```gdscript
+const ObjectPool = preload("res://addons/<addon-dir>/src/object_pool_module.gd")
+
+var config := ObjectPool.ObjectPoolConfig.new(100, "reset", Callable())
+
+var obj := ObjectPool.get_pooled(MyScript, config)
+# ...
+ObjectPool.return_to_pool(obj, config)
+```
+
+## Configuration
+
+None.
 
 ## Notes
-- `reset_callable` runs first if provided; otherwise the module invokes `reset_method` when returning objects.
-- Pools are keyed by class name; ensure pooled types expose a reset routine to avoid leaking state.
+
+- `reset_callable` runs first if provided; otherwise the module invokes `reset_method` on return.
+- Pools are keyed by `Object.get_class()`; use `class_name` on pooled scripts if you need unique pools per script.
