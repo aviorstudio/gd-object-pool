@@ -12,6 +12,7 @@ class ObjectPoolConfig extends RefCounted:
 		self.reset_callable = reset_callable
 
 var _pools: Dictionary[String, Array] = {}
+var _type_name_cache: Dictionary[String, String] = {}
 
 func get_pooled(type: GDScript, config: ObjectPoolConfig = ObjectPoolConfig.new()) -> Object:
 	var type_name: String = _get_type_name(type)
@@ -65,8 +66,13 @@ func get_pool_size(type: GDScript) -> int:
 	return _pools[type_name].size()
 
 func _get_type_name(type: GDScript) -> String:
+	var resource_path: String = type.resource_path
+	if _type_name_cache.has(resource_path):
+		return _type_name_cache[resource_path]
+
 	var instance: Object = type.new()
 	var type_class_name: String = instance.get_class()
+	_type_name_cache[resource_path] = type_class_name
 	return type_class_name
 
 func _reset_object(obj: Object, config: ObjectPoolConfig) -> void:
