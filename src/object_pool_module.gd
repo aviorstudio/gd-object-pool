@@ -1,6 +1,8 @@
+## Generic keyed object pools with optional reset hooks and usage stats.
 class_name ObjectPoolModule
 extends RefCounted
 
+## Pool configuration for max size and object reset strategy.
 class ObjectPoolConfig extends RefCounted:
 	var max_pool_size: int
 	var reset_method: String
