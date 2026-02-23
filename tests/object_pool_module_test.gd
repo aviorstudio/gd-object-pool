@@ -9,6 +9,7 @@ func _initialize() -> void:
 	_test_repeated_get_pooled_same_type_reuses_instance(failures)
 	_test_script_resource_path_keying_keeps_pools_separate(failures)
 	_test_warm_pool_and_stats(failures)
+	_test_factory_pool_stats_and_clear_pool(failures)
 
 	if failures.is_empty():
 		print("PASS gd-object-pool object_pool_module_test")
@@ -83,3 +84,36 @@ func _test_warm_pool_and_stats(failures: Array[String]) -> void:
 		failures.append("Expected final stats total_acquired=1")
 	if int(final_entry.get("total_returned", -1)) != 4:
 		failures.append("Expected final stats total_returned=4")
+
+func _test_factory_pool_stats_and_clear_pool(failures: Array[String]) -> void:
+	var pool := ObjectPoolModule.new()
+	pool.clear_all_pools()
+
+	var factory_config := ObjectPoolModule.ObjectPoolConfig.new(
+		10,
+		"",
+		Callable(),
+		Callable(self, "_factory_create")
+	)
+
+	var created: RefCounted = pool.get_pooled(PooledCounter, factory_config)
+	if created == null:
+		failures.append("Expected factory-backed get_pooled to create an object")
+
+	pool.return_to_pool(created, PooledCounter, factory_config)
+	var stats: Dictionary = pool.get_pool_stats(PooledCounter)
+	if int(stats.get("created", -1)) != 1:
+		failures.append("Expected get_pool_stats created=1")
+	if int(stats.get("acquired", -1)) != 1:
+		failures.append("Expected get_pool_stats acquired=1")
+	if int(stats.get("returned", -1)) != 1:
+		failures.append("Expected get_pool_stats returned=1")
+	if int(stats.get("pool_size", -1)) != 1:
+		failures.append("Expected get_pool_stats pool_size=1")
+
+	pool.clear_pool(PooledCounter)
+	if pool.get_pool_size(PooledCounter) != 0:
+		failures.append("Expected clear_pool to remove pooled instances for type")
+
+func _factory_create(type: GDScript) -> Object:
+	return type.new()
