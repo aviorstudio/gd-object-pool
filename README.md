@@ -1,39 +1,41 @@
 # gd-object-pool
 
-Game-agnostic object pooling helper for Godot 4 with configurable reset hooks.
+Object pooling primitives for Godot 4 with configurable reset behavior.
 
-- Package: `@aviorstudio/gd-object-pool`
-- Godot: `4.x` (tested on `4.4`)
+## Installation
 
-## Install
+### Via gdpm
+`gdpm install @aviorstudio/gd-object-pool`
 
-Place this folder under `res://addons/<addon-dir>/` (for example `res://addons/@aviorstudio_gd-object-pool/`).
+### Manual
+Copy this directory into `addons/@aviorstudio_gd-object-pool/` and enable the plugin.
 
-- With `gdpm`: install/link into your project's `addons/`.
-- Manually: copy or symlink this repo folder into `res://addons/<addon-dir>/`.
-
-## Files
-
-- `plugin.cfg` / `plugin.gd`: editor plugin entry (no runtime behavior).
-- `src/object_pool_module.gd`: pooling implementation (also registers `class_name ObjectPoolModule`).
-
-## Usage
+## Quick Start
 
 ```gdscript
-const ObjectPool = preload("res://addons/<addon-dir>/src/object_pool_module.gd")
+const ObjectPoolModule = preload("res://addons/@aviorstudio_gd-object-pool/src/object_pool_module.gd")
 
-var config := ObjectPool.ObjectPoolConfig.new(100, "reset", Callable())
-
-var obj := ObjectPool.get_pooled(MyScript, config)
-# ...
-ObjectPool.return_to_pool(obj, config)
+var pool := ObjectPoolModule.new()
+var config := ObjectPoolModule.ObjectPoolConfig.new(100, "reset", Callable())
+var obj: Object = pool.get_pooled(MyScript, config)
+pool.return_to_pool(obj, MyScript, config)
 ```
+
+## API Reference
+
+- `ObjectPoolConfig`: max size and reset hooks.
+- `get_pooled` / `return_to_pool`: acquire and release pooled objects.
+- `warm_pool`: pre-allocate instances.
+- `get_stats`: inspect pool utilization counters.
 
 ## Configuration
 
-None.
+No project settings are required.
 
-## Notes
+## Testing
 
-- `reset_callable` runs first if provided; otherwise the module invokes `reset_method` on return.
-- Pools are keyed by `Object.get_class()`; use `class_name` on pooled scripts if you need unique pools per script.
+`./run_tests.sh`
+
+## License
+
+MIT
