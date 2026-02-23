@@ -58,7 +58,8 @@ func _test_warm_pool_and_stats(failures: Array[String]) -> void:
 	if pool.get_pool_size(PooledCounter) != 3:
 		failures.append("Expected warm_pool to pre-allocate 3 instances")
 
-	var key: String = PooledCounter.resource_path
+	var pooled_counter_script: Script = PooledCounter
+	var key: String = pooled_counter_script.resource_path
 	var stats_after_warm: Dictionary[String, Dictionary] = pool.get_stats()
 	if not stats_after_warm.has(key):
 		failures.append("Expected stats entry for warmed type")
