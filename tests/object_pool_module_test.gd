@@ -10,6 +10,7 @@ func _initialize() -> void:
 	_test_script_resource_path_keying_keeps_pools_separate(failures)
 	_test_warm_pool_and_stats(failures)
 	_test_factory_pool_stats_and_clear_pool(failures)
+	_test_metrics_recorder_callback(failures)
 
 	if failures.is_empty():
 		print("PASS gd-object-pool object_pool_module_test")
@@ -114,6 +115,39 @@ func _test_factory_pool_stats_and_clear_pool(failures: Array[String]) -> void:
 	pool.clear_pool(PooledCounter)
 	if pool.get_pool_size(PooledCounter) != 0:
 		failures.append("Expected clear_pool to remove pooled instances for type")
+
+func _test_metrics_recorder_callback(failures: Array[String]) -> void:
+	var pool := ObjectPoolModule.new()
+	pool.clear_all_pools()
+	var metric_calls: Array[Dictionary] = []
+	var metrics_recorder: Callable = func(pool_type: String, metric_name: String, value: int) -> void:
+		metric_calls.append({"pool_type": pool_type, "metric_name": metric_name, "value": value})
+	var config := ObjectPoolModule.ObjectPoolConfig.new(10, "reset", Callable(), Callable(), metrics_recorder)
+
+	var first: RefCounted = pool.get_pooled(PooledCounter, config)
+	pool.return_to_pool(first, PooledCounter, config)
+	pool.get_pooled(PooledCounter, config)
+
+	var pooled_counter_script: Script = PooledCounter
+	var key: String = pooled_counter_script.resource_path
+	var expected_calls: Array[Dictionary] = [
+		{"pool_type": key, "metric_name": "pool_acquired", "value": 1},
+		{"pool_type": key, "metric_name": "pool_created", "value": 1},
+		{"pool_type": key, "metric_name": "pool_returned", "value": 1},
+		{"pool_type": key, "metric_name": "pool_acquired", "value": 1},
+	]
+	if metric_calls.size() != expected_calls.size():
+		failures.append("Expected %d metric calls, got %d" % [expected_calls.size(), metric_calls.size()])
+		return
+	for index in range(expected_calls.size()):
+		var actual: Dictionary = metric_calls[index]
+		var expected: Dictionary = expected_calls[index]
+		if str(actual.get("pool_type", "")) != str(expected.get("pool_type", "")):
+			failures.append("Expected metric call %d pool_type=%s, got %s" % [index, expected.get("pool_type", ""), actual.get("pool_type", "")])
+		if str(actual.get("metric_name", "")) != str(expected.get("metric_name", "")):
+			failures.append("Expected metric call %d metric_name=%s, got %s" % [index, expected.get("metric_name", ""), actual.get("metric_name", "")])
+		if int(actual.get("value", -1)) != int(expected.get("value", -1)):
+			failures.append("Expected metric call %d value=%d, got %d" % [index, int(expected.get("value", -1)), int(actual.get("value", -1))])
 
 func _factory_create(type: GDScript) -> Object:
 	return type.new()

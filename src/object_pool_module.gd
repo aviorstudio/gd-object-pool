@@ -18,17 +18,21 @@ class ObjectPoolConfig extends RefCounted:
 	var reset_callable: Callable
 	## Optional object factory callable. When set, called as `factory.call(type)`.
 	var factory: Callable
+	## Optional callable invoked as `recorder.call(pool_type, metric_name, value)`.
+	var metrics_recorder: Callable
 
 	func _init(
 		max_pool_size: int = 100,
 		reset_method: String = "reset",
 		reset_callable: Callable = Callable(),
-		factory: Callable = Callable()
+		factory: Callable = Callable(),
+		metrics_recorder: Callable = Callable()
 	) -> void:
 		self.max_pool_size = max_pool_size
 		self.reset_method = reset_method
 		self.reset_callable = reset_callable
 		self.factory = factory
+		self.metrics_recorder = metrics_recorder
 
 var _pools: Dictionary[String, Array] = {}
 var _stats: Dictionary[String, Dictionary] = {}
@@ -45,11 +49,14 @@ func get_pooled(type: GDScript, config: ObjectPoolConfig = null) -> Object:
 			_reset_object(pooled_obj, resolved_config)
 			_set_pool_size(type_key, pool.size())
 			_increment_stat(type_key, "total_acquired")
+			_record_metric(resolved_config, type_key, "pool_acquired", 1)
 			return pooled_obj
 
 	_set_pool_size(type_key, pool.size())
 	_increment_stat(type_key, "total_acquired")
 	_increment_stat(type_key, "total_created")
+	_record_metric(resolved_config, type_key, "pool_acquired", 1)
+	_record_metric(resolved_config, type_key, "pool_created", 1)
 	return _create_instance(type, resolved_config)
 
 ## Returns an object instance to the pool for future reuse.
@@ -67,6 +74,7 @@ func return_to_pool(obj: Object, type: GDScript, config: ObjectPoolConfig = null
 		_reset_object(obj, resolved_config)
 		pool.append(obj)
 		_increment_stat(type_key, "total_returned")
+		_record_metric(resolved_config, type_key, "pool_returned", 1)
 	_set_pool_size(type_key, pool.size())
 
 ## Pre-allocates pooled objects for a script type.
@@ -156,6 +164,13 @@ func _set_pool_size(type_key: String, size: int) -> void:
 	var entry: Dictionary = _stats[type_key]
 	entry["pool_size"] = size
 	_stats[type_key] = entry
+
+func _record_metric(config: ObjectPoolConfig, type_key: String, metric_name: String, value: int) -> void:
+	if config == null:
+		return
+	if not config.metrics_recorder.is_valid():
+		return
+	config.metrics_recorder.call(type_key, metric_name, value)
 
 func _create_instance(type: GDScript, config: ObjectPoolConfig) -> Object:
 	if config.factory.is_valid():
