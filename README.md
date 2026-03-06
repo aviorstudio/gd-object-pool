@@ -28,6 +28,16 @@ pool.return_to_pool(obj, MyScript, config)
 - `warm_pool`: pre-allocate instances.
 - `get_stats`: inspect pool utilization counters.
 
+## Poolable Protocol
+
+Pooled types should support one reset strategy so each acquired instance is clean:
+
+- Implement a method matching `ObjectPoolConfig.reset_method` (default: `reset`).
+- Or provide `ObjectPoolConfig.reset_callable` to reset instances externally.
+
+`ObjectPoolModule.validate_poolable(type, config)` checks this contract, and `warm_pool(...)`
+logs a warning when the configured reset strategy is missing.
+
 ## Configuration
 
 No project settings are required.
