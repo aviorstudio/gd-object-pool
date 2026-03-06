@@ -37,6 +37,20 @@ class ObjectPoolConfig extends RefCounted:
 var _pools: Dictionary[String, Array] = {}
 var _stats: Dictionary[String, Dictionary] = {}
 
+## Returns true when the given type supports the configured reset contract.
+static func validate_poolable(type: GDScript, config: ObjectPoolConfig) -> bool:
+	var probe: Object = type.new()
+	if probe == null:
+		return false
+	var has_reset: bool = config.reset_callable.is_valid() or (
+		config.reset_method != "" and probe.has_method(config.reset_method)
+	)
+	if probe is RefCounted:
+		probe = null
+	else:
+		probe.free()
+	return has_reset
+
 ## Returns an object instance for the given script type.
 ## Reuses pooled instances when available, otherwise creates a new one.
 func get_pooled(type: GDScript, config: ObjectPoolConfig = null) -> Object:
@@ -82,6 +96,8 @@ func warm_pool(type: GDScript, count: int, config: ObjectPoolConfig = null) -> v
 	if count <= 0:
 		return
 	var resolved_config: ObjectPoolConfig = config if config else ObjectPoolConfig.new()
+	if not validate_poolable(type, resolved_config):
+		push_warning("ObjectPoolModule: type %s has no reset method '%s'" % [type.resource_path, resolved_config.reset_method])
 	var type_key: String = _get_type_key(type)
 	var pool: Array = _ensure_pool(type_key)
 	var remaining: int = count

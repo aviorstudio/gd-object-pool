@@ -3,12 +3,14 @@ extends SceneTree
 const ObjectPoolModule = preload("res://src/object_pool_module.gd")
 const PooledCounter = preload("res://tests/fixtures/pooled_counter.gd")
 const PooledCounterAlt = preload("res://tests/fixtures/pooled_counter_alt.gd")
+const NonResettableCounter = preload("res://tests/fixtures/non_resettable_counter.gd")
 
 func _initialize() -> void:
 	var failures: Array[String] = []
 	_test_repeated_get_pooled_same_type_reuses_instance(failures)
 	_test_script_resource_path_keying_keeps_pools_separate(failures)
 	_test_warm_pool_and_stats(failures)
+	_test_validate_poolable_contract(failures)
 	_test_factory_pool_stats_and_clear_pool(failures)
 	_test_metrics_recorder_callback(failures)
 
@@ -85,6 +87,19 @@ func _test_warm_pool_and_stats(failures: Array[String]) -> void:
 		failures.append("Expected final stats total_acquired=1")
 	if int(final_entry.get("total_returned", -1)) != 4:
 		failures.append("Expected final stats total_returned=4")
+
+func _test_validate_poolable_contract(failures: Array[String]) -> void:
+	var with_reset_config := ObjectPoolModule.ObjectPoolConfig.new(10, "reset", Callable())
+	if not ObjectPoolModule.validate_poolable(PooledCounter, with_reset_config):
+		failures.append("Expected PooledCounter to satisfy reset-method poolable contract")
+
+	var without_reset_config := ObjectPoolModule.ObjectPoolConfig.new(10, "reset", Callable())
+	if ObjectPoolModule.validate_poolable(NonResettableCounter, without_reset_config):
+		failures.append("Expected NonResettableCounter to fail reset-method poolable contract")
+
+	var callable_config := ObjectPoolModule.ObjectPoolConfig.new(10, "", func(_obj: Object) -> void: pass)
+	if not ObjectPoolModule.validate_poolable(NonResettableCounter, callable_config):
+		failures.append("Expected reset callable to satisfy poolable contract")
 
 func _test_factory_pool_stats_and_clear_pool(failures: Array[String]) -> void:
 	var pool := ObjectPoolModule.new()
