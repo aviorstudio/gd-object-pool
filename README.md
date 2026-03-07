@@ -2,6 +2,8 @@
 
 Object pooling primitives for Godot 4 with configurable reset behavior.
 
+This addon is intentionally limited to pooling/reset mechanics.
+
 ## Installation
 
 ### Via gdpm
@@ -37,6 +39,11 @@ Pooled types should support one reset strategy so each acquired instance is clea
 
 `ObjectPoolModule.validate_poolable(type, config)` checks this contract, and `warm_pool(...)`
 logs a warning when the configured reset strategy is missing.
+
+## Scope Boundary
+
+- In scope: object reuse, pool limits, and reset contracts.
+- Out of scope: app lifecycle ownership, scene orchestration, and domain-specific cache policy.
 
 ## Configuration
 
