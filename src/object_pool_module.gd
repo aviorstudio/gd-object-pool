@@ -155,19 +155,21 @@ func _get_type_key(type: GDScript) -> String:
 
 func _ensure_pool(type_key: String) -> Array:
 	if not _pools.has(type_key):
-		_pools[type_key] = []
+		var new_pool: Array[Object] = []
+		_pools[type_key] = new_pool
 	_ensure_stats(type_key)
 	return _pools[type_key]
 
 func _ensure_stats(type_key: String) -> void:
 	if _stats.has(type_key):
 		return
-	_stats[type_key] = {
+	var new_stats: Dictionary[String, int] = {
 		"pool_size": 0,
 		"total_acquired": 0,
 		"total_returned": 0,
 		"total_created": 0,
 	}
+	_stats[type_key] = new_stats
 
 func _increment_stat(type_key: String, field_name: String) -> void:
 	_ensure_stats(type_key)
