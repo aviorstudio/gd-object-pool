@@ -1,16 +1,18 @@
 # gd-object-pool
 
-Object pooling primitives for Godot 4 with configurable reset behavior.
+Reuse objects and nodes in Godot 4 instead of constantly allocating new ones.
 
-This addon is intentionally limited to pooling/reset mechanics.
+Use this addon for bullets, cards, temporary effects, data containers, or any object type that benefits from predictable reuse.
 
 ## Installation
 
 ### Via gdpm
+
 `gdpm install @aviorstudio/gd-object-pool`
 
 ### Manual
-Copy `addon/` into `addons/@aviorstudio_gd-object-pool/` and enable the plugin.
+
+Copy `addon/` into `res://addons/@aviorstudio_gd-object-pool/` and enable the plugin.
 
 ## Quick Start
 
@@ -19,37 +21,43 @@ const ObjectPoolModule = preload("res://addons/@aviorstudio_gd-object-pool/src/o
 
 var pool := ObjectPoolModule.new()
 var config := ObjectPoolModule.ObjectPoolConfig.new(100, "reset", Callable())
-var obj: Object = pool.get_pooled(MyScript, config)
-pool.return_to_pool(obj, MyScript, config)
+
+var obj: Object = pool.get_pooled(MyPooledThing, config)
+# Use obj...
+pool.return_to_pool(obj, MyPooledThing, config)
 ```
 
-## API Reference
+## Reset Your Objects
 
-- `ObjectPoolConfig`: max size, reset hooks, optional factory, metrics recorder, and dispose hook.
-- `get_pooled` / `return_to_pool`: acquire and release pooled objects.
-- `warm_pool`: pre-allocate instances.
-- `get_stats`: inspect pool utilization counters.
+Pooled objects should be clean every time they are checked out. Use one of these reset strategies:
 
-## Poolable Protocol
+- Add a method matching `ObjectPoolConfig.reset_method`, which defaults to `reset`.
+- Or pass `ObjectPoolConfig.reset_callable` to reset instances externally.
 
-Pooled types should support one reset strategy so each acquired instance is clean:
+```gdscript
+class_name BulletData
 
-- Implement a method matching `ObjectPoolConfig.reset_method` (default: `reset`).
-- Or provide `ObjectPoolConfig.reset_callable` to reset instances externally.
+var damage := 0
+var target_id := ""
 
-`ObjectPoolModule.validate_poolable(type, config)` checks this contract, and `warm_pool(...)`
-logs a warning when the configured reset strategy is missing.
+func reset() -> void:
+	damage = 0
+	target_id = ""
+```
 
-When a returned object cannot be retained because the pool is full, `dispose_callable` is called if configured. Without a custom dispose callable, `Node` instances are queued for free and non-`RefCounted` objects are freed.
+## What You Get
 
-## Scope Boundary
+- `get_pooled`: acquire a reused or newly-created object.
+- `return_to_pool`: return an object for reuse.
+- `warm_pool`: pre-allocate objects before gameplay starts.
+- `get_stats`: inspect created, reused, returned, and disposed counts.
+- `dispose_callable`: customize cleanup when a pool is full.
 
-- In scope: object reuse, pool limits, and reset contracts.
-- Out of scope: app lifecycle ownership, scene orchestration, and domain-specific cache policy.
+## Notes
 
-## Configuration
-
-No project settings are required.
+- No project settings are required.
+- Node instances are queued for free when they cannot be retained.
+- Keep ownership rules in your game code so pooled nodes are removed from the scene tree before returning them.
 
 ## Testing
 
