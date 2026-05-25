@@ -1,6 +1,6 @@
 extends SceneTree
 
-const LruCacheModule = preload("res://src/lru_cache_module.gd")
+const LruCacheModule = preload("res://addon/src/lru_cache_module.gd")
 
 func _initialize() -> void:
 	var failures: Array[String] = []
