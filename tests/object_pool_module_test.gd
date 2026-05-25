@@ -1,6 +1,6 @@
 extends SceneTree
 
-const ObjectPoolModule = preload("res://src/object_pool_module.gd")
+const ObjectPoolModule = preload("res://addon/src/object_pool_module.gd")
 const PooledCounter = preload("res://tests/fixtures/pooled_counter.gd")
 const PooledCounterAlt = preload("res://tests/fixtures/pooled_counter_alt.gd")
 const NonResettableCounter = preload("res://tests/fixtures/non_resettable_counter.gd")

@@ -10,7 +10,7 @@ This addon is intentionally limited to pooling/reset mechanics.
 `gdpm install @aviorstudio/gd-object-pool`
 
 ### Manual
-Copy this directory into `addons/@aviorstudio_gd-object-pool/` and enable the plugin.
+Copy `addon/` into `addons/@aviorstudio_gd-object-pool/` and enable the plugin.
 
 ## Quick Start
 
