@@ -25,7 +25,7 @@ pool.return_to_pool(obj, MyScript, config)
 
 ## API Reference
 
-- `ObjectPoolConfig`: max size and reset hooks.
+- `ObjectPoolConfig`: max size, reset hooks, optional factory, metrics recorder, and dispose hook.
 - `get_pooled` / `return_to_pool`: acquire and release pooled objects.
 - `warm_pool`: pre-allocate instances.
 - `get_stats`: inspect pool utilization counters.
@@ -39,6 +39,8 @@ Pooled types should support one reset strategy so each acquired instance is clea
 
 `ObjectPoolModule.validate_poolable(type, config)` checks this contract, and `warm_pool(...)`
 logs a warning when the configured reset strategy is missing.
+
+When a returned object cannot be retained because the pool is full, `dispose_callable` is called if configured. Without a custom dispose callable, `Node` instances are queued for free and non-`RefCounted` objects are freed.
 
 ## Scope Boundary
 
