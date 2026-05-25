@@ -20,19 +20,23 @@ class ObjectPoolConfig extends RefCounted:
 	var factory: Callable
 	## Optional callable invoked as `recorder.call(pool_type, metric_name, value)`.
 	var metrics_recorder: Callable
+	## Optional callable invoked for valid objects rejected because the pool is full.
+	var dispose_callable: Callable
 
 	func _init(
 		max_pool_size: int = 100,
 		reset_method: String = "reset",
 		reset_callable: Callable = Callable(),
 		factory: Callable = Callable(),
-		metrics_recorder: Callable = Callable()
+		metrics_recorder: Callable = Callable(),
+		dispose_callable: Callable = Callable()
 	) -> void:
 		self.max_pool_size = max_pool_size
 		self.reset_method = reset_method
 		self.reset_callable = reset_callable
 		self.factory = factory
 		self.metrics_recorder = metrics_recorder
+		self.dispose_callable = dispose_callable
 
 var _pools: Dictionary[String, Array] = {}
 var _stats: Dictionary[String, Dictionary] = {}
@@ -82,6 +86,7 @@ func return_to_pool(obj: Object, type: GDScript, config: ObjectPoolConfig = null
 	var pool: Array = _ensure_pool(type_key)
 	if pool.size() >= resolved_config.max_pool_size:
 		_set_pool_size(type_key, pool.size())
+		_dispose_object(obj, resolved_config)
 		return
 
 	if not pool.has(obj):
@@ -204,3 +209,12 @@ func _reset_object(obj: Object, config: ObjectPoolConfig) -> void:
 
 	if config.reset_method != "" and obj.has_method(config.reset_method):
 		obj.call(config.reset_method)
+
+func _dispose_object(obj: Object, config: ObjectPoolConfig) -> void:
+	if config.dispose_callable.is_valid():
+		config.dispose_callable.call(obj)
+		return
+	if obj is Node:
+		(obj as Node).queue_free()
+	elif not (obj is RefCounted):
+		obj.free()
