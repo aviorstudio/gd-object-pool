@@ -6,9 +6,9 @@ Use this addon for bullets, cards, temporary effects, data containers, or any ob
 
 ## Installation
 
-### Via gdpm
+### Via gdam
 
-`gdpm install @aviorstudio/gd-object-pool`
+`gdam install @aviorstudio/gd-object-pool`
 
 ### Manual
 
