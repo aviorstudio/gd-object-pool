@@ -13,6 +13,7 @@ func _initialize() -> void:
 	_test_validate_poolable_contract(failures)
 	_test_factory_pool_stats_and_clear_pool(failures)
 	_test_metrics_recorder_callback(failures)
+	_test_duplicate_return_is_ignored_before_capacity(failures)
 
 	if failures.is_empty():
 		print("PASS gd-object-pool object_pool_module_test")
@@ -163,6 +164,31 @@ func _test_metrics_recorder_callback(failures: Array[String]) -> void:
 			failures.append("Expected metric call %d metric_name=%s, got %s" % [index, expected.get("metric_name", ""), actual.get("metric_name", "")])
 		if int(actual.get("value", -1)) != int(expected.get("value", -1)):
 			failures.append("Expected metric call %d value=%d, got %d" % [index, int(expected.get("value", -1)), int(actual.get("value", -1))])
+
+func _test_duplicate_return_is_ignored_before_capacity(failures: Array[String]) -> void:
+	var pool := ObjectPoolModule.new()
+	pool.clear_all_pools()
+	var disposed_objects: Array[Object] = []
+	var dispose_callable: Callable = func(_obj: Object) -> void:
+		disposed_objects.append(_obj)
+	var config := ObjectPoolModule.ObjectPoolConfig.new(1, "reset", Callable(), Callable(), Callable(), dispose_callable)
+
+	var first: RefCounted = pool.get_pooled(PooledCounter, config)
+	pool.return_to_pool(first, PooledCounter, config)
+	pool.return_to_pool(first, PooledCounter, config)
+
+	if pool.get_pool_size(PooledCounter) != 1:
+		failures.append("Expected duplicate return to keep pool size at 1")
+	var stats: Dictionary = pool.get_pool_stats(PooledCounter)
+	if int(stats.get("returned", -1)) != 1:
+		failures.append("Expected duplicate return not to increment returned stats")
+	if disposed_objects.size() != 0:
+		failures.append("Expected duplicate return not to dispose pooled object")
+
+	var second := PooledCounter.new()
+	pool.return_to_pool(second, PooledCounter, config)
+	if disposed_objects.size() != 1:
+		failures.append("Expected full pool to dispose a distinct returned object")
 
 func _factory_create(type: GDScript) -> Object:
 	return type.new()
