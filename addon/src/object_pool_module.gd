@@ -39,6 +39,7 @@ class ObjectPoolConfig extends RefCounted:
 		self.dispose_callable = dispose_callable
 
 var _pools: Dictionary[String, Array] = {}
+var _pool_ids: Dictionary[String, Dictionary] = {}
 var _stats: Dictionary[String, Dictionary] = {}
 
 ## Returns true when the given type supports the configured reset contract.
@@ -61,8 +62,11 @@ func get_pooled(type: GDScript, config: ObjectPoolConfig = null) -> Object:
 	var resolved_config: ObjectPoolConfig = config if config else ObjectPoolConfig.new()
 	var type_key: String = _get_type_key(type)
 	var pool: Array = _ensure_pool(type_key)
+	var pool_ids: Dictionary = _ensure_pool_ids(type_key)
 	while not pool.is_empty():
 		var pooled_obj: Object = pool.pop_back()
+		if pooled_obj:
+			pool_ids.erase(pooled_obj.get_instance_id())
 		if pooled_obj and is_instance_valid(pooled_obj):
 			_reset_object(pooled_obj, resolved_config)
 			_set_pool_size(type_key, pool.size())
@@ -84,16 +88,21 @@ func return_to_pool(obj: Object, type: GDScript, config: ObjectPoolConfig = null
 	var resolved_config: ObjectPoolConfig = config if config else ObjectPoolConfig.new()
 	var type_key: String = _get_type_key(type)
 	var pool: Array = _ensure_pool(type_key)
+	var pool_ids: Dictionary = _ensure_pool_ids(type_key)
+	var instance_id: int = obj.get_instance_id()
+	if pool_ids.has(instance_id):
+		_set_pool_size(type_key, pool.size())
+		return
 	if pool.size() >= resolved_config.max_pool_size:
 		_set_pool_size(type_key, pool.size())
 		_dispose_object(obj, resolved_config)
 		return
 
-	if not pool.has(obj):
-		_reset_object(obj, resolved_config)
-		pool.append(obj)
-		_increment_stat(type_key, "total_returned")
-		_record_metric(resolved_config, type_key, "pool_returned", 1)
+	_reset_object(obj, resolved_config)
+	pool.append(obj)
+	pool_ids[instance_id] = true
+	_increment_stat(type_key, "total_returned")
+	_record_metric(resolved_config, type_key, "pool_returned", 1)
 	_set_pool_size(type_key, pool.size())
 
 ## Pre-allocates pooled objects for a script type.
@@ -105,12 +114,14 @@ func warm_pool(type: GDScript, count: int, config: ObjectPoolConfig = null) -> v
 		push_warning("ObjectPoolModule: type %s has no reset method '%s'" % [type.resource_path, resolved_config.reset_method])
 	var type_key: String = _get_type_key(type)
 	var pool: Array = _ensure_pool(type_key)
+	var pool_ids: Dictionary = _ensure_pool_ids(type_key)
 	var remaining: int = count
 	while remaining > 0 and pool.size() < resolved_config.max_pool_size:
 		var pooled_obj: Object = _create_instance(type, resolved_config)
 		_increment_stat(type_key, "total_created")
 		_reset_object(pooled_obj, resolved_config)
 		pool.append(pooled_obj)
+		pool_ids[pooled_obj.get_instance_id()] = true
 		_increment_stat(type_key, "total_returned")
 		remaining -= 1
 	_set_pool_size(type_key, pool.size())
@@ -120,6 +131,8 @@ func clear_pool(type: GDScript) -> void:
 	var type_key: String = _get_type_key(type)
 	if _pools.has(type_key):
 		_pools[type_key].clear()
+	if _pool_ids.has(type_key):
+		_pool_ids[type_key].clear()
 	_set_pool_size(type_key, 0)
 
 ## Clears all pools and all tracked stats.
@@ -127,6 +140,7 @@ func clear_all_pools() -> void:
 	for type_name in _pools.keys():
 		_pools[type_name].clear()
 	_pools.clear()
+	_pool_ids.clear()
 	_stats.clear()
 
 ## Returns current pooled instance count for one script type.
@@ -162,8 +176,15 @@ func _ensure_pool(type_key: String) -> Array:
 	if not _pools.has(type_key):
 		var new_pool: Array[Object] = []
 		_pools[type_key] = new_pool
+	_ensure_pool_ids(type_key)
 	_ensure_stats(type_key)
 	return _pools[type_key]
+
+func _ensure_pool_ids(type_key: String) -> Dictionary:
+	if not _pool_ids.has(type_key):
+		var new_pool_ids: Dictionary[int, bool] = {}
+		_pool_ids[type_key] = new_pool_ids
+	return _pool_ids[type_key]
 
 func _ensure_stats(type_key: String) -> void:
 	if _stats.has(type_key):
