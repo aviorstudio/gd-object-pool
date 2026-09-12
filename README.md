@@ -74,13 +74,22 @@ The version in `addon/plugin.cfg` is the addon package version. Releases are cre
 
 ## Testing
 
+**Correction (fieldsofrevik#146):** earlier CI used Godot 4.4.1 and an
+exit-code-only loop, so the statement below overstated what a green run proved.
+CI and release now use the same Godot 4.7.2 suite, reject runtime/log errors,
+prove assertion reachability, and install the exact closed-manifest ZIP through
+enable/restart/disable/restart editor lifecycle checks.
+
 Run locally with:
 
 ```sh
 ./tests/test.sh
 ```
 
-CI runs the same test script when available.
+CI runs the required test manifest unconditionally. The addon is platform-neutral
+GDScript with no browser-specific implementation path, so the supported matrix
+for this release is Godot 4.7.2 on native Linux; browser verification is not
+applicable to this repository.
 
 ## License
 

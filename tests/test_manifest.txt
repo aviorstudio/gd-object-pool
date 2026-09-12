@@ -1,0 +1,2 @@
+tests/lru_cache_module_test.gd
+tests/object_pool_module_test.gd

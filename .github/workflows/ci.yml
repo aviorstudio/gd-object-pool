@@ -39,3 +39,14 @@ jobs:
 
       - name: Test
         uses: ./.github/actions/test
+
+      - name: Build exact release archive
+        run: python3 package/package.py build '@aviorstudio_gd-object-pool.zip'
+
+      - name: Upload tested archive
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: gd-object-pool-package
+          path: '@aviorstudio_gd-object-pool.zip'
+          if-no-files-found: error
+          retention-days: 7
