@@ -1,0 +1,7 @@
+plugin.cfg
+plugin.gd
+plugin.gd.uid
+src/lru_cache_module.gd
+src/lru_cache_module.gd.uid
+src/object_pool_module.gd
+src/object_pool_module.gd.uid
