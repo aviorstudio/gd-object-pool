@@ -52,12 +52,17 @@ func reset() -> void:
 - `warm_pool`: pre-allocate objects before gameplay starts.
 - `get_stats`: inspect created, reused, returned, and disposed counts.
 - `dispose_callable`: customize cleanup when a pool is full.
+- `clear_pool`: dispose/release idle entries while preserving lifetime stats.
+- `clear_all_pools`: dispose/release every idle entry and reset all stats.
 
 ## Notes
 
 - No project settings are required.
 - Node instances are queued for free when they cannot be retained.
 - Keep ownership rules in your game code so pooled nodes are removed from the scene tree before returning them.
+- The pool owns idle entries only. Clearing never disposes checked-out objects;
+  returning an object checked out before a clear disposes it with the policy
+  active at that clear rather than repopulating the new pool generation.
 
 ## Repository Layout
 

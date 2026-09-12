@@ -4,6 +4,8 @@ const ObjectPoolModule = preload("res://addon/src/object_pool_module.gd")
 const PooledCounter = preload("res://tests/fixtures/pooled_counter.gd")
 const PooledCounterAlt = preload("res://tests/fixtures/pooled_counter_alt.gd")
 const NonResettableCounter = preload("res://tests/fixtures/non_resettable_counter.gd")
+const PooledNode = preload("res://tests/fixtures/pooled_node.gd")
+const ManualPooledObject = preload("res://tests/fixtures/manual_pooled_object.gd")
 
 func _initialize() -> void:
 	var failures: Array[String] = []
@@ -14,6 +16,10 @@ func _initialize() -> void:
 	_test_factory_pool_stats_and_clear_pool(failures)
 	_test_metrics_recorder_callback(failures)
 	_test_duplicate_return_is_ignored_before_capacity(failures)
+	await _test_clear_ownership_and_late_returns(failures)
+	_test_refcounted_and_custom_disposal(failures)
+	_test_invalid_and_repeated_clear(failures)
+	await _test_clear_all_disposes_idle_and_resets_stats(failures)
 
 	if failures.is_empty():
 		print("PASS gd-object-pool object_pool_module_test")
@@ -192,3 +198,102 @@ func _test_duplicate_return_is_ignored_before_capacity(failures: Array[String]) 
 
 func _factory_create(type: GDScript) -> Object:
 	return type.new()
+
+func _test_clear_ownership_and_late_returns(failures: Array[String]) -> void:
+	var pool := ObjectPoolModule.new()
+	var config := ObjectPoolModule.ObjectPoolConfig.new(10, "reset")
+	pool.warm_pool(PooledNode, 2, config)
+	var checked_out: Node = pool.get_pooled(PooledNode, config)
+	var checked_out_id := checked_out.get_instance_id()
+	pool.clear_pool(PooledNode)
+	await process_frame
+	await process_frame
+	if not is_instance_id_valid(checked_out_id):
+		failures.append("clear_pool disposed a checked-out Node")
+	if pool.get_pool_size(PooledNode) != 0:
+		failures.append("clear_pool retained an idle Node")
+	var stats := pool.get_pool_stats(PooledNode)
+	if int(stats.get("created", -1)) != 2 or int(stats.get("disposed", -1)) != 1:
+		failures.append("clear_pool must preserve counters and record one idle disposal")
+	pool.return_to_pool(checked_out, PooledNode, config)
+	await process_frame
+	await process_frame
+	if is_instance_id_valid(checked_out_id):
+		failures.append("pre-clear late Node return was not disposed")
+	if pool.get_pool_size(PooledNode) != 0:
+		failures.append("pre-clear late return repopulated the pool")
+	var orphan_final := int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT))
+	if orphan_final != 0:
+		failures.append("Node clear lifecycle retained owned orphans: %d" % orphan_final)
+
+func _test_refcounted_and_custom_disposal(failures: Array[String]) -> void:
+	var pool := ObjectPoolModule.new()
+	var ref_config := ObjectPoolModule.ObjectPoolConfig.new(10, "reset")
+	pool.warm_pool(PooledCounter, 2, ref_config)
+	pool.clear_pool(PooledCounter)
+	if pool.get_pool_size(PooledCounter) != 0 or int(pool.get_pool_stats(PooledCounter).get("disposed", -1)) != 2:
+		failures.append("clear_pool did not release both idle RefCounted entries")
+
+	var disposed_ids: Array[int] = []
+	var custom_config := ObjectPoolModule.ObjectPoolConfig.new(
+		10, "reset", Callable(), Callable(), Callable(),
+		func(obj: Object) -> void: disposed_ids.append(obj.get_instance_id())
+	)
+	pool.warm_pool(ManualPooledObject, 2, custom_config)
+	pool.clear_pool(ManualPooledObject)
+	if disposed_ids.size() != 2:
+		failures.append("clear_pool did not route idle manual objects through the custom disposer")
+	# Custom disposal owns lifetime; release the controls manually after observing it.
+	for instance_id in disposed_ids:
+		var instance := instance_from_id(instance_id)
+		if instance and is_instance_valid(instance):
+			instance.free()
+
+	var old_disposed: Array[int] = []
+	var new_disposed: Array[int] = []
+	var old_config := ObjectPoolModule.ObjectPoolConfig.new(
+		10, "reset", Callable(), Callable(), Callable(),
+		func(obj: Object) -> void:
+			old_disposed.append(obj.get_instance_id())
+			obj.free()
+	)
+	var new_config := ObjectPoolModule.ObjectPoolConfig.new(
+		10, "reset", Callable(), Callable(), Callable(),
+		func(obj: Object) -> void:
+			new_disposed.append(obj.get_instance_id())
+			obj.free()
+	)
+	var checked_out: Object = pool.get_pooled(ManualPooledObject, old_config)
+	pool.clear_pool(ManualPooledObject)
+	pool.return_to_pool(checked_out, ManualPooledObject, new_config)
+	if old_disposed.size() != 1 or not new_disposed.is_empty():
+		failures.append("late return did not use the disposal policy active at clear")
+
+func _test_invalid_and_repeated_clear(failures: Array[String]) -> void:
+	var pool := ObjectPoolModule.new()
+	var config := ObjectPoolModule.ObjectPoolConfig.new(10, "reset")
+	var manual: Object = pool.get_pooled(ManualPooledObject, config)
+	pool.return_to_pool(manual, ManualPooledObject, config)
+	manual.free()
+	pool.clear_pool(ManualPooledObject)
+	pool.clear_pool(ManualPooledObject)
+	if pool.get_pool_size(ManualPooledObject) != 0:
+		failures.append("repeated clear retained an invalid manual object")
+	if int(pool.get_pool_stats(ManualPooledObject).get("disposed", -1)) != 0:
+		failures.append("invalid idle instance was counted as disposed")
+
+func _test_clear_all_disposes_idle_and_resets_stats(failures: Array[String]) -> void:
+	var pool := ObjectPoolModule.new()
+	var config := ObjectPoolModule.ObjectPoolConfig.new(10, "reset")
+	pool.warm_pool(PooledNode, 1, config)
+	pool.warm_pool(PooledCounter, 1, config)
+	pool.clear_all_pools()
+	await process_frame
+	await process_frame
+	if not pool.get_stats().is_empty():
+		failures.append("clear_all_pools did not reset all stats")
+	if pool.get_pool_size(PooledNode) != 0 or pool.get_pool_size(PooledCounter) != 0:
+		failures.append("clear_all_pools retained idle entries")
+	var orphan_final := int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT))
+	if orphan_final != 0:
+		failures.append("clear_all_pools retained owned Node orphans: %d" % orphan_final)
