@@ -33,7 +33,7 @@ runs:
     # engine this addon is tested against lived in workflow YAML.
     - uses: ./.github/actions/setup-godot
       with:
-        godot-version: '4.4.1'
+        godot-version: '4.7.2'
 
     # No `if: hashFiles(...)` guard. This step used to skip itself when
     # tests/test.sh was absent, which is indistinguishable from the script being
@@ -42,3 +42,11 @@ runs:
     - name: Godot tests
       shell: bash
       run: ./tests/test.sh
+
+    - name: Runner negative and restored controls
+      shell: bash
+      run: ./tests/gate_self_test.sh
+
+    - name: Exact package install and editor restart
+      shell: bash
+      run: ./tests/package_install_test.sh
