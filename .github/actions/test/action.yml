@@ -24,9 +24,7 @@ runs:
     # whatever was left.
     - name: Validate addon package
       shell: bash
-      run: |
-        set -euo pipefail
-        test -f addon/plugin.cfg
+      run: make lint
 
     # Godot comes from a LOCAL action, copied from the one castledrop and prizm
     # carry. The version used to be a download URL written into ci.yml -- the
@@ -39,14 +37,10 @@ runs:
     # tests/test.sh was absent, which is indistinguishable from the script being
     # renamed or deleted -- a skipped test is a green tick. This addon has a
     # suite, so the step runs unconditionally and a missing script now fails.
-    - name: Godot tests
+    - name: Godot tests and runner negative/restored controls
       shell: bash
-      run: ./tests/test.sh
-
-    - name: Runner negative and restored controls
-      shell: bash
-      run: ./tests/gate_self_test.sh
+      run: make test
 
     - name: Exact package install and editor restart
       shell: bash
-      run: ./tests/package_install_test.sh
+      run: make artifact-smoke
