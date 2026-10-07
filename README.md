@@ -70,3 +70,7 @@ func reset() -> void:
 ## License
 
 See `LICENSE`.
+
+## Development commands
+
+Run `make install` for pinned tools and checksum-verified Godot. `make check` validates the addon manifest, builds the exact package, runs behavioral and runner-control suites, and checks packaged editor enable/restart/disable/restart behavior. Individual gates are available through `make lint`, `make build`, `make test` and `make artifact-smoke`. `make clean` removes generated artifacts. Development and stop commands require a consuming Godot project and are unsupported here.
