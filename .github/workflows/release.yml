@@ -7,20 +7,23 @@ concurrency: release-${{ github.repository }}
 
 jobs:
   test:
+    name: "Test package"
     runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 20
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - name: Common exact-commit suite
+      - name: "Check out source"
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: "Test"
         uses: ./.github/actions/test
       - name: Build tested release bytes
         run: |
           set -euo pipefail
           python3 package/package.py build '@aviorstudio_gd-object-pool.zip'
           sha256sum '@aviorstudio_gd-object-pool.zip' > package.sha256
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - name: "Upload artifacts"
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: release-bytes-${{ github.sha }}
           path: |
@@ -30,6 +33,7 @@ jobs:
           retention-days: 7
 
   publish:
+    name: "Publish release"
     needs: test
     runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 10
@@ -37,8 +41,10 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+      - name: "Check out source"
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: "Download artifacts"
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: release-bytes-${{ github.sha }}
       - name: Verify release identity and tested bytes
@@ -71,7 +77,7 @@ jobs:
           fi
         env:
           GH_TOKEN: ${{ github.token }}
-      - name: Publish exact release to GDAM
+      - name: "Publish addon"
         uses: aviorstudio/gdam-actions/publish@6677226d9353df1d410f3e7f5075e13b3b7d5308 # v0.5.1
         with:
           addon: '@aviorstudio/gd-object-pool'
