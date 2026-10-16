@@ -29,7 +29,8 @@ runs:
     # Godot comes from a LOCAL action, copied from the one castledrop and prizm
     # carry. The version used to be a download URL written into ci.yml -- the
     # engine this addon is tested against lived in workflow YAML.
-    - uses: ./.github/actions/setup-godot
+    - name: "Set up Godot"
+      uses: ./.github/actions/setup-godot
       with:
         godot-version: '4.7.2'
 
