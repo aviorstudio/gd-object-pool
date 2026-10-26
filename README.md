@@ -1,4 +1,4 @@
-<!-- Generated from private documentation source. Do not edit directly. Source SHA256: 13b0ea9b3b781d05f4865d09b6ea6683a36451c6ec3b2e839484e90a4a6a9a99 -->
+<!-- Generated from private documentation source. Do not edit directly. Source SHA256: a28e6d350e40c547edf6b371f0b0190379c638c07da7ce820561e4fddac104d8 -->
 
 # gd-object-pool
 
@@ -71,6 +71,14 @@ func reset() -> void:
 
 See `LICENSE`.
 
-## Development commands
+## Repository development
 
-Run `make install` for pinned tools and checksum-verified Godot. `make check` validates the addon manifest, builds the exact package, runs behavioral and runner-control suites, and checks packaged editor enable/restart/disable/restart behavior. Individual gates are available through `make lint`, `make build`, `make test` and `make artifact-smoke`. `make clean` removes generated artifacts. Development and stop commands require a consuming Godot project and are unsupported here.
+Install the [Komizo release](https://github.com/nicodes/komizo#install) matching `komizo.lock`.
+
+```sh
+komizo check                 # Source, runtime, package and installed-addon checks
+komizo run test              # Focused addon test suite
+komizo run artifact-check    # Verify the built package
+```
+
+The addon recipe supplies the verified Godot engine and templates in checkout-owned tool/data directories. Interactive use belongs to a consuming Godot project.

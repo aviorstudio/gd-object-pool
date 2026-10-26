@@ -1,3 +1,7 @@
 .DS_Store
 .artifacts/
 dist/
+
+.komizo.mise*.toml
+
+.komizo.mise*.lock
