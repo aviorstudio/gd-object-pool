@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build and verify the exact closed-manifest GDAM release archive."""
+"""Build and verify the exact closed-manifest gdam release archive."""
 
 from __future__ import annotations
 
