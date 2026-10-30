@@ -13,17 +13,18 @@ jobs:
     steps:
     - name: Check out source
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-    - name: Set up locked komizo
-      uses: nicodes/komizo/setup@2ca94e2fd4bb05f41bb228e9c366e5cc733c75e6
+    - name: Set up development tools
+      uses: nicodes/tools/setup@f7e243524ce2aa29f299e4c79db33001f72f4a30
       env:
         GH_TOKEN: ${{ github.token }}
       timeout-minutes: 5
     - name: Check project
-      uses: nicodes/komizo/run@2ca94e2fd4bb05f41bb228e9c366e5cc733c75e6
-      with:
-        target: check
+      shell: bash
+      run: |-
+        set -euo pipefail
+        mise run check
     - name: Build tested release bytes
-      run: |
+      run: |-
         set -euo pipefail
         python3 package/package.py build '@aviorstudio_gd-object-pool.zip'
         sha256sum '@aviorstudio_gd-object-pool.zip' > package.sha256
@@ -55,7 +56,7 @@ jobs:
         name: release-bytes-${{ github.sha }}
     - name: Verify release identity and tested bytes
       id: release
-      run: |
+      run: |-
         set -euo pipefail
         test "$GITHUB_REF" = 'refs/heads/main'
         sha256sum --check --strict package.sha256
@@ -71,7 +72,7 @@ jobs:
       env:
         GH_TOKEN: ${{ github.token }}
     - name: Create or verify GitHub release from tested bytes
-      run: |
+      run: |-
         set -euo pipefail
         tag='${{ steps.release.outputs.tag }}'
         if gh release view "$tag" >/dev/null 2>&1; then
