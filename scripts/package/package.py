@@ -9,9 +9,9 @@ import stat
 import sys
 import zipfile
 
-ROOT = pathlib.Path(__file__).resolve().parents[1]
+ROOT = pathlib.Path(__file__).resolve().parents[2]
 ADDON = ROOT / "addon"
-MANIFEST = ROOT / "package" / "manifest.txt"
+MANIFEST = ROOT / "scripts/package" / "manifest.txt"
 
 
 def entries() -> list[str]:

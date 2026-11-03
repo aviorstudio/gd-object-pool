@@ -26,7 +26,7 @@ jobs:
     - name: Build tested release bytes
       run: |-
         set -euo pipefail
-        python3 package/package.py build '@aviorstudio_gd-object-pool.zip'
+        python3 scripts/package/package.py build '@aviorstudio_gd-object-pool.zip'
         sha256sum '@aviorstudio_gd-object-pool.zip' > package.sha256
     - name: Upload artifacts
       uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
@@ -60,7 +60,7 @@ jobs:
         set -euo pipefail
         test "$GITHUB_REF" = 'refs/heads/main'
         sha256sum --check --strict package.sha256
-        python3 package/package.py verify '@aviorstudio_gd-object-pool.zip'
+        python3 scripts/package/package.py verify '@aviorstudio_gd-object-pool.zip'
         version=$(sed -nE 's/^version="([0-9]+\.[0-9]+\.[0-9]+)"$/\1/p' addon/plugin.cfg)
         test -n "$version"
         tag="v$version"

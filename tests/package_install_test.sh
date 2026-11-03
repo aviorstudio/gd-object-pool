@@ -9,7 +9,7 @@ archive="$work/@aviorstudio_gd-object-pool.zip"
 project="$work/project"
 addon_dir="$project/addons/@aviorstudio_gd-object-pool"
 
-python3 "$ROOT_DIR/package/package.py" build "$archive"
+python3 "$ROOT_DIR/scripts/package/package.py" build "$archive"
 mkdir -p "$addon_dir"
 python3 - "$archive" "$addon_dir" <<'PY'
 import pathlib, sys, zipfile
