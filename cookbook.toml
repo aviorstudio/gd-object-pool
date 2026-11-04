@@ -32,5 +32,9 @@ path = "tests/package_install_test.sh"
 timeout = 300
 
 [publication]
+environment = "release"
+validation_timeout = 20
+publish_timeout = 10
+resume = true
 tag_prefix = "v"
 mode = "plugin"

@@ -8,12 +8,14 @@ mkdir -p "$fixture/tests"
 
 run_control() {
     local name=$1 expected=$2
-    if python3 "$TOOLS_ROOT/helpers/godot-test.py" --project "$SCRIPT_DIR/.." --program "$fixture/tests/$name.gd" --sentinel "PASS gd-object-pool $name" --timeout 2 >/dev/null 2>&1; then
+    local log="$fixture/$name.log"
+    if python3 "$TOOLS_ROOT/helpers/godot-test.py" --project "$SCRIPT_DIR/.." --program "$fixture/tests/$name.gd" --sentinel "PASS gd-object-pool $name" --timeout 2 >"$log" 2>&1; then
         actual=pass
     else
         actual=fail
     fi
     if [[ "$actual" != "$expected" ]]; then
+        cat "$log" >&2
         echo "Control $name expected $expected, got $actual" >&2
         exit 1
     fi
