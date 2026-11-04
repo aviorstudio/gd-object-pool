@@ -5,11 +5,12 @@ ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 GODOT=${GODOT_BIN:-godot}
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
-archive="$work/@aviorstudio_gd-object-pool.zip"
+archive="$ROOT_DIR/dist/@aviorstudio_gd-object-pool.zip"
 project="$work/project"
 addon_dir="$project/addons/@aviorstudio_gd-object-pool"
 
-python3 "$ROOT_DIR/scripts/package/package.py" build "$archive"
+test -f "$archive"
+python3 "$TOOLS_ROOT/helpers/addon-package.py" verify --manifest "$ROOT_DIR/package.files" "$archive"
 mkdir -p "$addon_dir"
 python3 - "$archive" "$addon_dir" <<'PY'
 import pathlib, sys, zipfile

@@ -1,0 +1,36 @@
+version = 1
+recipe = "godot-addon"
+
+[package]
+source = "addon"
+manifest = "package.files"
+archive = "dist/@aviorstudio_gd-object-pool.zip"
+
+[lint]
+required_paths = ["addon/plugin.cfg", "addon/plugin.gd", "package.files"]
+
+[format]
+paths = ["addon", "tests"]
+
+[clean]
+paths = ["dist", ".artifacts/build", ".artifacts/godot", ".artifacts/godot-data", ".artifacts/playwright", ".artifacts/tmp", ".godot"]
+
+[[tests.unit]]
+runner = "godot-suite"
+path = "tests"
+sentinel = "PASS gd-object-pool"
+timeout = 60
+
+[[tests.unit]]
+runner = "bash"
+path = "tests/gate_self_test.sh"
+timeout = 120
+
+[[tests.integration]]
+runner = "bash"
+path = "tests/package_install_test.sh"
+timeout = 300
+
+[publication]
+tag_prefix = "v"
+initial = "plugin"

@@ -8,9 +8,7 @@ mkdir -p "$fixture/tests"
 
 run_control() {
     local name=$1 expected=$2
-    local manifest="$fixture/$name.manifest"
-    printf 'tests/%s.gd\n' "$name" > "$manifest"
-    if TEST_MANIFEST="$manifest" GODOT_TEST_TIMEOUT_SECONDS=2 "$SCRIPT_DIR/test.sh" >/dev/null 2>&1; then
+    if python3 "$TOOLS_ROOT/helpers/godot-test.py" --project "$SCRIPT_DIR/.." --program "$fixture/tests/$name.gd" --sentinel "PASS gd-object-pool $name" --timeout 2 >/dev/null 2>&1; then
         actual=pass
     else
         actual=fail
@@ -55,25 +53,16 @@ func _initialize() -> void:
 	pass
 GD
 
-# The runner project root is normally the repository. Copy controls there only
-# for each invocation so their deliberate errors can never enter the real suite.
-for name in success runtime_error overwritten_failure parse_failure hang; do
-    cp "$fixture/tests/$name.gd" "$SCRIPT_DIR/$name.gd"
-    trap 'rm -rf "$fixture"; rm -f "$SCRIPT_DIR"/{success,runtime_error,overwritten_failure,parse_failure,hang}.gd' EXIT
-done
-
 run_control success pass
 run_control runtime_error fail
 run_control overwritten_failure fail
 run_control parse_failure fail
 run_control hang fail
 
-printf 'tests/does_not_exist.gd\n' > "$fixture/missing.manifest"
-if TEST_MANIFEST="$fixture/missing.manifest" "$SCRIPT_DIR/test.sh" >/dev/null 2>&1; then
+if python3 "$TOOLS_ROOT/helpers/godot-test.py" --project "$SCRIPT_DIR/.." --program "$fixture/tests/does_not_exist.gd" --sentinel NEVER --timeout 2 >/dev/null 2>&1; then
     echo "Missing-script control unexpectedly passed" >&2
     exit 1
 fi
 echo "CONTROL_REACHED missing_script fail"
 
-rm -f "$SCRIPT_DIR"/{success,runtime_error,overwritten_failure,parse_failure,hang}.gd
 echo "GATE_CONTROLS_RESTORED 6"
