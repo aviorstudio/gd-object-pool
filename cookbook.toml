@@ -33,4 +33,4 @@ timeout = 300
 
 [publication]
 tag_prefix = "v"
-initial = "plugin"
+mode = "plugin"
