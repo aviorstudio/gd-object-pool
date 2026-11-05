@@ -10,7 +10,7 @@ project="$work/project"
 addon_dir="$project/addons/@aviorstudio_gd-object-pool"
 
 test -f "$archive"
-python3 "$TOOLS_ROOT/helpers/addon-package.py" verify --manifest "$ROOT_DIR/package.files" "$archive"
+python3 "$TOOLS_ROOT/helpers/addon-package.py" verify --manifest "$ROOT_DIR/package.files" --archive "$archive"
 mkdir -p "$addon_dir"
 python3 - "$archive" "$addon_dir" <<'PY'
 import pathlib, sys, zipfile
