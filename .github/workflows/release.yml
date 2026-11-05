@@ -1,93 +1,18 @@
+# Generated cookbook caller. Change recipe data and regenerate.
 name: Release
 'on':
-  workflow_dispatch: null
-concurrency: release-${{ github.repository }}
+  workflow_dispatch:
+permissions: {}
+concurrency:
+  group: release-${{ github.repository }}
+  cancel-in-progress: false
 jobs:
-  test:
-    name: Test package
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    permissions:
-      contents: read
-      attestations: read
-    steps:
-    - name: Check out source
-      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-    - name: Set up development tools
-      uses: nicodes/tools/setup@a1c0321f3b4917a7e99eca42e241e46670f6e1e1
-      env:
-        GH_TOKEN: ${{ github.token }}
-      timeout-minutes: 5
-    - name: Check project
-      shell: bash
-      run: |-
-        set -euo pipefail
-        mise run check
-    - name: Build tested release bytes
-      run: |-
-        set -euo pipefail
-        python3 scripts/package/package.py build '@aviorstudio_gd-object-pool.zip'
-        sha256sum '@aviorstudio_gd-object-pool.zip' > package.sha256
-    - name: Upload artifacts
-      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
-      with:
-        name: release-bytes-${{ github.sha }}
-        path: |
-          @aviorstudio_gd-object-pool.zip
-          package.sha256
-        if-no-files-found: error
-        retention-days: 7
-    env:
-      MISE_GITHUB_TOKEN: ${{ github.token }}
-  publish:
-    name: Publish release
-    needs: test
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    environment: release
+  release:
+    uses: nicodes/tools/.github/workflows/cookbook-addon-release.yml@ade449c3150fd5a9c86fb6ec21d8ae905d6a2754
     permissions:
       contents: write
-    steps:
-    - name: Check out source
-      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-    - name: Download artifacts
-      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
-      with:
-        name: release-bytes-${{ github.sha }}
-    - name: Verify release identity and tested bytes
-      id: release
-      run: |-
-        set -euo pipefail
-        test "$GITHUB_REF" = 'refs/heads/main'
-        sha256sum --check --strict package.sha256
-        python3 scripts/package/package.py verify '@aviorstudio_gd-object-pool.zip'
-        version=$(sed -nE 's/^version="([0-9]+\.[0-9]+\.[0-9]+)"$/\1/p' addon/plugin.cfg)
-        test -n "$version"
-        tag="v$version"
-        if remote_sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --jq '.object.sha' 2>/dev/null); then
-          test "$remote_sha" = "$GITHUB_SHA"
-        fi
-        echo "version=$version" >> "$GITHUB_OUTPUT"
-        echo "tag=$tag" >> "$GITHUB_OUTPUT"
-      env:
-        GH_TOKEN: ${{ github.token }}
-    - name: Create or verify GitHub release from tested bytes
-      run: |-
-        set -euo pipefail
-        tag='${{ steps.release.outputs.tag }}'
-        if gh release view "$tag" >/dev/null 2>&1; then
-          mkdir -p existing-release
-          gh release download "$tag" --pattern '@aviorstudio_gd-object-pool.zip' --dir existing-release --clobber
-          cmp '@aviorstudio_gd-object-pool.zip' 'existing-release/@aviorstudio_gd-object-pool.zip'
-        else
-          gh release create "$tag" '@aviorstudio_gd-object-pool.zip' --target "$GITHUB_SHA" --generate-notes
-        fi
-      env:
-        GH_TOKEN: ${{ github.token }}
-    - name: Publish addon
-      uses: aviorstudio/gdam-actions/publish@3a46007e296e60e15a4ad47727ad33046e52e6ea
-      with:
-        addon: '@aviorstudio/gd-object-pool'
-        tag: ${{ steps.release.outputs.tag }}
-        asset: '@aviorstudio_gd-object-pool.zip'
-        api-key: ${{ secrets.GDAM_API_KEY }}
+    with:
+      tools-ref: ade449c3150fd5a9c86fb6ec21d8ae905d6a2754
+      mode: release
+    secrets:
+      gdam-key: ${{ secrets.GDAM_API_KEY }}
