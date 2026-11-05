@@ -10,7 +10,7 @@ archive = "dist/@aviorstudio_gd-object-pool.zip"
 required_paths = ["addon/plugin.cfg", "addon/plugin.gd", "package.files"]
 
 [format]
-paths = ["addon", "tests"]
+paths = ["addon", "tests/fixtures/manual_pooled_object.gd", "tests/fixtures/non_resettable_counter.gd", "tests/fixtures/pooled_counter.gd", "tests/fixtures/pooled_counter_alt.gd", "tests/fixtures/pooled_node.gd", "tests/lru_cache_module_test.gd", "tests/object_pool_module_test.gd"]
 
 [clean]
 paths = ["dist", ".artifacts/build", ".artifacts/godot", ".artifacts/godot-data", ".artifacts/playwright", ".artifacts/tmp", ".godot"]
