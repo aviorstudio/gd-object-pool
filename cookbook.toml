@@ -38,6 +38,3 @@ publish_timeout = 10
 resume = true
 tag_prefix = "v"
 mode = "plugin"
-
-[ci]
-timeout_minutes = 30
