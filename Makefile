@@ -1,6 +1,6 @@
 # Generated cookbook entrypoint. Change cookbook.toml and regenerate.
 # Recipe data SHA256: aae8aa81842ade20ad03aa9e5ee66c4ea9c3843bfa145e87a5e3fd12df617761
-COOKBOOK_REF := 39666e8d26d2bd0e1c7e5fee6f289fd0fd3a5202
+COOKBOOK_REF := 061da6e56a06a629317536bf9482dab8a2ed6505
 COOKBOOK_RECIPE := godot-addon
 COOKBOOK_ROOT ?= .artifacts/cookbook/$(COOKBOOK_REF)
 COOKBOOK_TEST_SUITES := lint unit security integration
